@@ -85,7 +85,7 @@ int StackVerify(stack_t* stk, const log_ctx_t* ctx)
     if (stk == NULL) state = STACK_IS_NULL;
     if (stk->data == NULL && stk->capacity != 0) state = DATA_IS_NULL;
     if (stk->size > stk->capacity - 2) state = STACK_OVERFLOW;
-    if (stk->data[-1] != CanaryLeft || stk->data[stk->capacity - 2] != CanaryRight) return CANARY_DAMAGED;
+    if (stk->data[-1] != CanaryLeft || stk->data[stk->capacity - 2] != CanaryRight) state = CANARY_DAMAGED;
     if (state != OK)
     {
         write_log(log, LOG_ERROR, "StackVerify returns ERROR CODE: %d\n", state);
