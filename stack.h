@@ -85,7 +85,7 @@ int StackVerify(stack_t* stk, const log_ctx_t* ctx)
     if (stk == NULL) state = STACK_IS_NULL;
     if (stk->data == NULL && stk->capacity != 0) state = DATA_IS_NULL;
     if (stk->size > stk->capacity - 2) state = STACK_OVERFLOW;
-    //if (stk->data[-1] != CanaryLeft || stk->data[stk->capacity - 2] != CanaryRight) return CANARY_DAMAGED;
+    if (stk->data[-1] != CanaryLeft || stk->data[stk->capacity - 2] != CanaryRight) return CANARY_DAMAGED;
     if (state != OK)
     {
         write_log(log, LOG_ERROR, "StackVerify returns ERROR CODE: %d\n", state);
@@ -204,10 +204,10 @@ int Stack_Pop(stack_t* stk, StackElem_t* last, log_ctx_t* ctx)
     {
         stk->data = (StackElem_t* )realloc(stk->data, sizeof(StackElem_t) * (stk->size + 1));
         stk->capacity /= 2;
-        stk->data[stk->size] = CanaryRight;
     }
 
-    for (size_t i = stk->size; i < stk->capacity; ++i) stk->data[i] = NAN;
+    for (size_t i = stk->size; i < stk->capacity - 2; ++i) stk->data[i] = NAN;
+    stk->data[stk->capacity - 2] = CanaryRight;
 
     state = StackVerify(stk, ctx);
     assert(state == OK);
@@ -230,4 +230,3 @@ void Stack_Dtor(stack_t* stk, log_ctx_t* ctx)
 }
 
 #endif // STACK_H_INCLUDED
-///Канарейки перенеси при реаллокации
