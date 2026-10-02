@@ -60,7 +60,8 @@ enum ERRORS
     STACK_IS_NULL = 3,
     DATA_IS_NULL = 4,
     STACK_UNDERFLOW = 5,
-    CANARY_DAMAGED = 6
+    CANARY_DAMAGED = 6,
+    NOT_A_STACK = 7
 };
 
 typedef struct
@@ -69,6 +70,13 @@ typedef struct
     size_t size;
     size_t capacity;
 } stack_t;
+
+typedef struct
+{
+    stack_t* data;
+    size_t size;
+    size_t capacity;
+} mini_stack;
 
 int StackVerify(stack_t*, const log_ctx_t* ctx);
 int CheckNull(stack_t*, const log_ctx_t* ctx);
@@ -134,7 +142,11 @@ int CheckNull(stack_t* stk, const log_ctx_t* ctx)
 int Stack_Ctor(stack_t* stk, size_t capacity, log_ctx_t* ctx)
 {
     int state = CheckNull(stk, ctx);
-    assert(state == OK);
+    if (state != OK)
+    {
+        printf("Error: %d", state);
+        return state;
+    }
 
     stk->capacity = capacity + 2;
     StackElem_t* ptr = (StackElem_t*)calloc(stk->capacity, sizeof(StackElem_t));
@@ -154,7 +166,11 @@ int Stack_Ctor(stack_t* stk, size_t capacity, log_ctx_t* ctx)
     stk->data[capacity] = CanaryRight;
 
     state = StackVerify(stk, ctx);
-    assert(state == OK);
+    if (state != OK)
+    {
+        printf("Error: %d", state);
+        return state;
+    }
 
     return OK;
 }
@@ -162,7 +178,11 @@ int Stack_Ctor(stack_t* stk, size_t capacity, log_ctx_t* ctx)
 void Stack_Push(stack_t* stk, StackElem_t val, log_ctx_t* ctx)
 {
     int state = StackVerify(stk, ctx);
-    assert(state == OK);
+    if (state != OK)
+    {
+        printf("Error: %d", state);
+        return;
+    }
     if (stk->size == stk->capacity - 2)
     {
         StackElem_t* ptr = (StackElem_t* )realloc(stk->data - 1, sizeof(StackElem_t) * 2 * (stk->capacity - 1));
@@ -179,7 +199,11 @@ void Stack_Push(stack_t* stk, StackElem_t val, log_ctx_t* ctx)
 
     stk->data[stk->size++] = val;
     state = StackVerify(stk, ctx);
-    assert(state == OK);
+    if (state != OK)
+    {
+        printf("Error: %d", state);
+        return;
+    }
 }
 
 int Stack_Pop(stack_t* stk, StackElem_t* last, log_ctx_t* ctx)
@@ -187,7 +211,11 @@ int Stack_Pop(stack_t* stk, StackElem_t* last, log_ctx_t* ctx)
     FILE* log = fopen("log.txt", "a");
 
     int state = StackVerify(stk, ctx);
-    assert(state == OK);
+    if (state != OK)
+    {
+        printf("Error: %d", state);
+        return state;
+    }
     if (stk->size == 0)
     {
         write_log(log, LOG_WARNING, "StackVerify returns warning with code: %d\n", STACK_UNDERFLOW);
@@ -210,14 +238,22 @@ int Stack_Pop(stack_t* stk, StackElem_t* last, log_ctx_t* ctx)
     stk->data[stk->capacity - 2] = CanaryRight;
 
     state = StackVerify(stk, ctx);
-    assert(state == OK);
+    if (state != OK)
+    {
+        printf("Error: %d", state);
+        return state;
+    }
     return OK;
 }
 
 void Stack_Dtor(stack_t* stk, log_ctx_t* ctx)
 {
     int state = StackVerify(stk, ctx);
-    assert(state == OK);
+    if (state != OK)
+    {
+        printf("Error: %d", state);
+        return;
+    }
 
     free(--stk->data);
     --stk->data;
@@ -226,7 +262,11 @@ void Stack_Dtor(stack_t* stk, log_ctx_t* ctx)
     stk->size = 0;
 
     state = CheckNull(stk, ctx);
-    assert(state == OK);
+    if (state != OK)
+    {
+        printf("Error: %d", state);
+        return;
+    }
 }
 
 #endif // STACK_H_INCLUDED
