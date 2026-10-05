@@ -1,4 +1,5 @@
 #define DEBUG
+//#define NO_CANARY
 typedef double StackElem_t;
 #include <stdio.h>
 #include <assert.h>
@@ -17,13 +18,14 @@ int main()
 
     StackElem_t last = 0;
     StackPop(&stk1, &last);
+    printf("%lg", last);
     StackPush(&stk1, 30);
     for (int i = 0; i < 30; ++i)
     {
         StackPush(&stk1, 0.657);
     }
 
-    for (int i = 0; i < 12; ++i)
+    for (int i = 0; i < 50; ++i)
     {
         StackPop(&stk1, &last);
     }
