@@ -23,7 +23,7 @@ typedef struct
 #define StackCtor(stk, capacity) Stack_Ctor((stk), (capacity), &(log_ctx_t){__FILE__, __LINE__, __func__})
 #define StackDtor(stk) Stack_Dtor((stk), &(log_ctx_t){__FILE__, __LINE__, __func__})
 
-#define PRINT_STACK(stk, specificator, delta)\
+#define PRINT_STACK(stk, specificator, delta, poizon)\
 {\
     printf("stack with address %p: ", stk);\
     printf("size = %lld, capacity = %lld\ndata with address %p\n{\n", (stk)->size, ((stk)->capacity) - delta, (stk)->data);\
@@ -31,6 +31,7 @@ typedef struct
     {\
         printf("\tdata[%lld] = %"#specificator"\n", i, (stk)->data[i]);\
     }\
+    if (poizon)\
     for (size_t i = (stk)->size; i < (stk)->capacity - delta; ++i)\
     {\
         printf("*\tdata[%lld] = %"#specificator" (POIZON)\n", i, (stk)->data[i]);\
@@ -38,7 +39,7 @@ typedef struct
     printf("}\n");\
 }
 
-#define PRINT_STACK_DEBUG(stk, specificator, delta)\
+#define PRINT_STACK_DEBUG(stk, specificator, delta, poizon)\
 {\
     FILE* log = fopen("log.txt", "a");\
     fprintf(log, "size = %lld, capacity = %lld\ndata with address %p\n{\n", (stk)->size, ((stk)->capacity) - delta, (stk)->data);\
@@ -47,6 +48,7 @@ typedef struct
     {\
         fprintf(log, "\tdata[%lld] = %"#specificator"\n", i, (stk)->data[i]);\
     }\
+    if (poizon)\
     for (size_t i = (stk)->size; i < (stk)->capacity - delta; ++i)\
     {\
         fprintf(log, "*\tdata[%lld] = %"#specificator" (POIZON)\n", i, (stk)->data[i]);\
@@ -92,6 +94,12 @@ int StackVerify(stack_t* stk, const log_ctx_t* ctx)
 {
     FILE* log = fopen("log.txt", "a");
 
+    #ifndef NO_POIZON
+    int poizon = 1;
+    #else
+    int poizon = 0;
+    #endif
+
     #ifdef NO_CANARY
     int delta = 0;
     #else
@@ -110,17 +118,17 @@ int StackVerify(stack_t* stk, const log_ctx_t* ctx)
     {
         write_log(log, LOG_ERROR, "StackVerify returns ERROR CODE: %d\n", state);
         printf("ERROR: %d in file: %s, line: %d, function^ %s\n", state, ctx->file, ctx->line, ctx->func);
-        PRINT_STACK_DEBUG(stk, lg, delta);
+        PRINT_STACK_DEBUG(stk, lg, delta, poizon);
         #ifdef DEBUG
-        PRINT_STACK(stk, lg, delta);
+        PRINT_STACK(stk, lg, delta, poizon);
         #endif
         if (fclose(log) != 0) printf("Error of closing log file\n");
         return state;
     }
     #ifdef DEBUG
     write_log(log, LOG_INFO, "StackVerify returns: %d\n", OK);
-    PRINT_STACK_DEBUG(stk, lg, delta);
-    PRINT_STACK(stk, lg, delta);
+    PRINT_STACK_DEBUG(stk, lg, delta, poizon);
+    PRINT_STACK(stk, lg, delta, poizon);
     #endif
     if (fclose(log) != 0) printf("Error of closing log file\n");
     return OK;
@@ -128,12 +136,16 @@ int StackVerify(stack_t* stk, const log_ctx_t* ctx)
 
 int CheckNull(stack_t* stk, const log_ctx_t* ctx)
 {
+    #ifndef NO_POIZON
+    int poizon = 1;
+    #else
+    int poizon = 0;
+    #endif
+
     #ifdef NO_CANARY
     int delta = 0;
-    int gamma = 0;
     #else
     int delta = 2;
-    int gamma = 1;
     #endif
 
     FILE* log = fopen("log.txt", "a");
@@ -150,9 +162,9 @@ int CheckNull(stack_t* stk, const log_ctx_t* ctx)
 
     write_log(log, LOG_ERROR, "CheckNull returns ERROR CODE: %d\n", state);
     printf("ERROR: %d in file: %s, line: %d, function^ %s\n", state, ctx->file, ctx->line, ctx->func);
-    PRINT_STACK_DEBUG(stk, lg, delta);
+    PRINT_STACK_DEBUG(stk, lg, delta, poizon);
     #ifdef DEBUG
-    PRINT_STACK(stk, lg, delta);
+    PRINT_STACK(stk, lg, delta, poizon);
     #endif
 
     if (fclose(log) != 0) printf("Error of closing log file\n");
@@ -173,7 +185,7 @@ int Stack_Ctor(stack_t* stk, size_t capacity, log_ctx_t* ctx)
     int state = CheckNull(stk, ctx);
     if (state != OK)
     {
-        printf("Error: %d", state);
+        printf("Error: %d ", state);
         return state;
     }
     #endif
@@ -276,6 +288,11 @@ int Stack_Pop(stack_t* stk, StackElem_t* last, log_ctx_t* ctx)
 {
     FILE* log = fopen("log.txt", "a");
 
+    #ifndef NO_POIZON
+    int poizon = 1;
+    #else
+    int poizon = 0;
+    #endif
     #ifdef NO_CANARY
     int delta = 0;
     int gamma = 0;
@@ -296,9 +313,9 @@ int Stack_Pop(stack_t* stk, StackElem_t* last, log_ctx_t* ctx)
     {
         write_log(log, LOG_WARNING, "StackVerify returns warning with code: %d\n", STACK_UNDERFLOW);
         printf("ERROR: %d in file: %s, line: %d, function^ %s\n", STACK_UNDERFLOW, ctx->file, ctx->line, ctx->func);
-        PRINT_STACK_DEBUG(stk, lg, delta);
+        PRINT_STACK_DEBUG(stk, lg, delta, poizon);
         #ifdef DEBUG
-        PRINT_STACK(stk, lg, delta);
+        PRINT_STACK(stk, lg, delta, poizon);
         #endif
         if (fclose(log) != 0) printf("Error of closing log file\n");
         return STACK_UNDERFLOW;
@@ -306,7 +323,8 @@ int Stack_Pop(stack_t* stk, StackElem_t* last, log_ctx_t* ctx)
     #endif
 
     *last = stk->data[--stk->size];
-    if (2 * (stk->size + gamma) == stk->capacity)
+    size_t cap_two = (stk->capacity % 2 == 0) ? stk->capacity : stk->capacity - 1;
+    if (2 * (stk->size + gamma) == cap_two && cap_two - delta!= 0)
     {
         StackElem_t* ptr = (StackElem_t*)realloc(stk->data - gamma, sizeof(StackElem_t) * (stk->size + gamma));
         stk->data = ptr + gamma;
@@ -345,10 +363,8 @@ void Stack_Dtor(stack_t* stk, log_ctx_t* ctx)
     #endif
 
     #ifdef NO_CANARY
-    int delta = 0;
     int gamma = 0;
     #else
-    int delta = 2;
     int gamma = 1;
     #endif
 
